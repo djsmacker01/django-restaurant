@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block title %}Menu - Django Restaurant | Our Culinary Collection{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Our Menu</h2>
+            <p>Discover our carefully crafted selection of culinary delights</p>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="card shadow-md mb-5">
+            <div class="card-body p-4">
+                <form method="get" id="filterForm">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-search text-primary me-2"></i>Search Menu
+                            </label>
+                            <div class="input-group">
+                                <input type="text" name="search" id="searchInput" class="form-control" 
+                                       placeholder="Search by name or description..." 
+                                       value="{{ search_query }}" 
+                                       aria-label="Search menu items">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-filter text-primary me-2"></i>Filter by Category
+                            </label>
+                            <select name="category" id="categoryFilter" class="form-select" 
+                                    aria-label="Filter by category">
+                                <option value="">All Categories</option>
+                                {% for value, label in category_choices %}
+                                <option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            {% if category_filter or search_query %}
+                            <a href="{% url 'restaurant:menu_list' %}" class="btn btn-outline-secondary w-100 mb-2">
+                                <i class="fas fa-times me-1"></i>Clear Filters
+                            </a>
+                            {% endif %}
+                            {% if user.is_staff %}
+                            <a href="{% url 'restaurant:menu_item_create' %}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-1"></i>Add Item
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Active Filters Display -->
+                {% if category_filter or search_query %}
+                <div class="mt-3 pt-3 border-top">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="text-muted small fw-bold">Active Filters:</span>
+                        {% if search_query %}
+                        <span class="badge bg-primary px-3 py-2">
+                            <i class="fas fa-search me-1"></i>Search: "{{ search_query }}"
+                            <a href="?{% if category_filter %}category={{ category_filter }}{% endif %}" 
+                               class="text-white ms-2 text-decoration-none">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                        {% endif %}
+                        {% if category_filter %}
+                        <span class="badge bg-info px-3 py-2">
+                            <i class="fas fa-filter me-1"></i>Category: 
+                            {% for value, label in category_choices %}
+                                {% if value == category_filter %}{{ label }}{% endif %}
+                            {% endfor %}
+                            <a href="?{% if search_query %}search={{ search_query }}{% endif %}" 
+                               class="text-white ms-2 text-decoration-none">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </span>
+                        {% endif %}
+                        <span class="badge bg-secondary px-3 py-2 ms-auto">
+                            <i class="fas fa-list me-1"></i>{{ menu_items|length }} item{{ menu_items|length|pluralize }} found
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Menu Items by Category -->
+        {% if categories %}
+            {% for category, items in categories.items %}
+            <div class="mb-5 fade-in">
+                <div class="d-flex align-items-center mb-4">
+                    <h2 class="mb-0 me-3" style="font-size: 2rem;">{{ category|title }}</h2>
+                    <div class="flex-grow-1" style="height: 3px; background: linear-gradient(90deg, var(--primary-color), transparent); border-radius: 2px;"></div>
+                    <span class="badge bg-primary ms-3" style="font-size: 0.875rem; padding: 0.5rem 1rem;">{{ items|length }} item{{ items|length|pluralize }}</span>
+                </div>
+                <div class="row g-4">
+                    {% for item in items %}
+                    <div class="col-md-4 col-lg-3">
+                        <div class="card h-100 menu-item-card">
+                            {% if item.image %}
+                            <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}" 
+                                 style="height: 240px; object-fit: cover;">
+                            {% else %}
+                            <div class="card-img-top d-flex align-items-center justify-content-center" 
+                                 style="height: 240px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <i class="fas fa-utensils fa-5x text-white opacity-50"></i>
+                            </div>
+                            {% endif %}
+                            <div class="menu-item-overlay">
+                                <div class="text-white">
+                                    <h5 class="mb-2">{{ item.name }}</h5>
+                                    <p class="mb-0 small">{{ item.description|truncatewords:10|default:"Delicious dish" }}</p>
+                                </div>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title fw-bold mb-2">{{ item.name }}</h5>
+                                <p class="card-text text-muted small flex-grow-1 mb-3">
+                                    {{ item.description|truncatewords:12|default:"A delicious dish crafted with care" }}
+                                </p>
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="text-primary fw-bold fs-4">£{{ item.price }}</span>
+                                        {% if not item.is_available %}
+                                        <span class="badge bg-danger">Unavailable</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="{% url 'restaurant:menu_detail' item.pk %}" class="btn btn-outline-primary flex-fill">
+                                            <i class="fas fa-eye me-1"></i>View
+                                        </a>
+                                        {% if user.is_authenticated and item.is_available %}
+                                        <form method="post" action="{% url 'restaurant:add_to_cart' %}" class="flex-fill">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="menu_item_id" value="{{ item.pk }}">
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="fas fa-cart-plus me-1"></i>Add
+                                            </button>
+                                        </form>
+                                        {% elif not user.is_authenticated %}
+                                        <a href="{% url 'account_login' %}" class="btn btn-outline-secondary flex-fill">
+                                            <i class="fas fa-lock me-1"></i>Login
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card shadow-md">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-utensils fa-5x text-muted opacity-50"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">No menu items found</h4>
+                    <p class="text-muted mb-4">
+                        {% if user.is_staff %}
+                        <a href="{% url 'restaurant:menu_item_create' %}" class="text-primary fw-bold text-decoration-none">
+                            Create your first menu item
+                        </a>
+                        {% else %}
+                        Please check back later for our delicious offerings.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<style>
+    .input-group .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(196, 30, 58, 0.25);
+    }
+    
+    .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(196, 30, 58, 0.25);
+    }
+    
+    .badge a:hover {
+        opacity: 0.8;
+    }
+    
+    #categoryFilter {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    #categoryFilter:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .badge a {
+        cursor: pointer;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('filterForm');
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        
+        // Auto-submit search on Enter key
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    filterForm.submit();
+                }
+            });
+        }
+        
+        // Auto-submit when category changes
+        if (categoryFilter) {
+            categoryFilter.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        }
+        
+        // Show loading state when form submits
+        if (filterForm) {
+            filterForm.addEventListener('submit', function() {
+                const submitBtn = filterForm.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    const originalHTML = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    submitBtn.disabled = true;
+                    
+                    // Re-enable after a delay (in case of error)
+                    setTimeout(function() {
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
+                    }, 5000);
+                }
+            });
+        }
+        
+        // Add loading state to "Add to Cart" buttons
+        const addToCartForms = document.querySelectorAll('form[action*="add_to_cart"]');
+        addToCartForms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    const originalHTML = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    submitBtn.disabled = true;
+                    
+                    // Re-enable after a delay (in case of error)
+                    setTimeout(function() {
+                        submitBtn.innerHTML = originalHTML;
+                        submitBtn.disabled = false;
+                    }, 3000);
+                }
+            });
+        });
+        
+        // Scroll to top smoothly when success message appears
+        const successMessages = document.querySelectorAll('.alert-success');
+        if (successMessages.length > 0) {
+            // Scroll to top smoothly
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+            
+            // Auto-dismiss success messages after 5 seconds
+            successMessages.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
+        }
+    });
+</script>
+{% endblock extra_js %}
+{% endblock content %}

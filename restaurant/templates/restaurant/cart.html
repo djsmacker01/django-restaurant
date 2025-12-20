@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block title %}Shopping Cart - Django Restaurant{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Shopping Cart</h2>
+            <p>Review your items before checkout</p>
+        </div>
+
+        {% if cart and order_items %}
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-lg">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <div class="feature-icon me-3" style="width: 60px; height: 60px;">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Your Cart</h5>
+                                <small class="text-white-50">{{ order_items|length }} item{{ order_items|length|pluralize }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;"></th>
+                                        <th>Item</th>
+                                        <th class="text-center">Price</th>
+                                        <th class="text-center">Quantity</th>
+                                        <th class="text-center">Subtotal</th>
+                                        <th class="text-center" style="width: 100px;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in order_items %}
+                                    <tr class="cart-item-row">
+                                        <td>
+                                            {% if item.menu_item.image %}
+                                            <img src="{{ item.menu_item.image.url }}" 
+                                                 alt="{{ item.menu_item.name }}" 
+                                                 class="cart-item-image">
+                                            {% else %}
+                                            <div class="cart-item-image bg-gradient d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-utensils text-white"></i>
+                                            </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <strong>{{ item.menu_item.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ item.menu_item.get_category_display }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-bold">£{{ item.price }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <form method="post" action="{% url 'restaurant:update_cart_item' item.pk %}" class="d-inline">
+                                                {% csrf_token %}
+                                                <div class="input-group" style="width: 120px; margin: 0 auto;">
+                                                    <input type="number" name="quantity" value="{{ item.quantity }}" 
+                                                           min="1" max="10" class="form-control text-center" 
+                                                           onchange="this.form.submit()">
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm" style="display: none;">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="fw-bold text-primary fs-5">£{{ item.subtotal }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteItemModal{{ item.pk }}"
+                                                    aria-label="Remove {{ item.menu_item.name }} from cart">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="col-lg-4">
+                <div class="card shadow-lg sticky-top" style="top: 100px;">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-receipt me-2"></i>Order Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Subtotal:</span>
+                            <span class="fw-bold">£{{ cart.total_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">Delivery:</span>
+                            <span class="fw-bold text-success">Free</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="fs-5 fw-bold">Total:</span>
+                            <span class="fs-4 fw-bold text-primary">£{{ cart.total_amount }}</span>
+                        </div>
+                        <a href="{% url 'restaurant:checkout' %}" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+                        </a>
+                        <a href="{% url 'restaurant:menu_list' %}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card shadow-lg">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-shopping-cart fa-5x text-muted opacity-50"></i>
+                </div>
+                <h4 class="text-muted mb-3">Your cart is empty</h4>
+                <p class="text-muted mb-4">Start adding delicious items from our menu!</p>
+                <a href="{% url 'restaurant:menu_list' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-utensils me-2"></i>Browse Menu
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Delete Item Confirmation Modals -->
+{% for item in order_items %}
+<div class="modal fade" id="deleteItemModal{{ item.pk }}" tabindex="-1" 
+     aria-labelledby="deleteItemModalLabel{{ item.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white border-0">
+                <div class="d-flex align-items-center w-100">
+                    <div class="feature-icon me-3" style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title mb-0" id="deleteItemModalLabel{{ item.pk }}">Remove Item from Cart</h5>
+                        <small class="text-white-50">This action cannot be undone</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-warning mb-3">
+                    <div class="d-flex">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Are you sure you want to remove this item?</h6>
+                            <p class="mb-0 small">This item will be removed from your cart.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            {% if item.menu_item.image %}
+                            <img src="{{ item.menu_item.image.url }}" 
+                                 alt="{{ item.menu_item.name }}" 
+                                 class="cart-item-image me-3">
+                            {% else %}
+                            <div class="cart-item-image bg-gradient d-flex align-items-center justify-content-center me-3">
+                                <i class="fas fa-utensils text-white"></i>
+                            </div>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ item.menu_item.name }}</h6>
+                                <small class="text-muted d-block">{{ item.menu_item.get_category_display }}</small>
+                                <div class="mt-2">
+                                    <span class="text-muted">Quantity:</span>
+                                    <strong class="ms-2">{{ item.quantity }}</strong>
+                                    <span class="text-muted ms-3">Price:</span>
+                                    <strong class="ms-2 text-primary">£{{ item.subtotal }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-light">
+                <form method="post" action="{% url 'restaurant:remove_cart_item' item.pk %}" class="w-100">
+                    {% csrf_token %}
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-danger flex-fill">
+                            <i class="fas fa-trash me-2"></i>Remove Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+    .cart-item-image {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        border: 2px solid var(--border-color);
+    }
+    
+    .cart-item-row {
+        transition: var(--transition);
+    }
+    
+    .cart-item-row:hover {
+        background-color: var(--primary-light) !important;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .sticky-top {
+        position: sticky;
+    }
+    
+    /* Modal Styles */
+    .modal-content {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .modal-header {
+        border-radius: 0;
+    }
+    
+    .modal-footer {
+        border-radius: 0;
+    }
+    
+    .feature-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    
+    .modal-body .card {
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+    }
+    
+    .modal-body .cart-item-image {
+        width: 80px;
+        height: 80px;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    // Add smooth animation when modal opens
+    document.addEventListener('DOMContentLoaded', function() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            modal.addEventListener('show.bs.modal', function() {
+                this.querySelector('.modal-content').style.transform = 'scale(0.9)';
+                this.querySelector('.modal-content').style.opacity = '0';
+            });
+            
+            modal.addEventListener('shown.bs.modal', function() {
+                const content = this.querySelector('.modal-content');
+                content.style.transition = 'all 0.3s ease';
+                content.style.transform = 'scale(1)';
+                content.style.opacity = '1';
+            });
+        });
+    });
+</script>
+{% endblock extra_js %}
+{% endblock content %}

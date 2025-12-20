@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Django Restaurant | Fine Dining Experience{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center">
+    <div class="container position-relative">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h1 class="display-2 mb-4">Welcome to Django Restaurant</h1>
+                <p class="lead mb-5">Where Culinary Excellence Meets Exceptional Service</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{% url 'restaurant:menu_list' %}" class="btn btn-light btn-lg shadow-lg">
+                        <i class="fas fa-utensils me-2"></i>Explore Our Menu
+                    </a>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'account_signup' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Join Us Today
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Why Choose Us</h2>
+            <p>Experience the difference that quality and passion make</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 text-center feature-card">
+                    <div class="card-body p-5">
+                        <div class="feature-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <h3 class="card-title mb-3">Exquisite Menu</h3>
+                        <p class="card-text text-muted mb-4">
+                            Discover our carefully curated selection of appetizers, main courses, 
+                            desserts, and premium beverages. Each dish is crafted with passion and 
+                            the finest ingredients.
+                        </p>
+                        <a href="{% url 'restaurant:menu_list' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>View Menu
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 text-center feature-card">
+                    <div class="card-body p-5">
+                        <div class="feature-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <h3 class="card-title mb-3">Table Reservations</h3>
+                        <p class="card-text text-muted mb-4">
+                            Reserve your perfect table for any occasion. Whether it's a romantic 
+                            dinner, family celebration, or business meeting, we'll make it memorable.
+                        </p>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'restaurant:reservation_create' %}" class="btn btn-primary">
+                            <i class="fas fa-calendar-plus me-2"></i>Book Now
+                        </a>
+                        {% else %}
+                        <a href="{% url 'account_login' %}" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login to Book
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 text-center feature-card">
+                    <div class="card-body p-5">
+                        <div class="feature-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h3 class="card-title mb-3">Online Ordering</h3>
+                        <p class="card-text text-muted mb-4">
+                            Order your favorite dishes online with ease. Fast, secure checkout 
+                            and convenient delivery or pickup options. Track your orders in real-time.
+                        </p>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'restaurant:menu_list' %}" class="btn btn-primary">
+                            <i class="fas fa-shopping-bag me-2"></i>Order Now
+                        </a>
+                        {% else %}
+                        <a href="{% url 'account_signup' %}" class="btn btn-primary">
+                            <i class="fas fa-user-plus me-2"></i>Sign Up to Order
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Items Section -->
+{% if featured_items %}
+<section class="section bg-white">
+    <div class="container">
+        <div class="section-title">
+            <h2>Featured Dishes</h2>
+            <p>Our most popular and highly recommended selections</p>
+        </div>
+        <div class="row g-4">
+            {% for item in featured_items %}
+            <div class="col-md-4 col-lg-3">
+                <div class="card h-100 menu-item-card">
+                    {% if item.image %}
+                    <img src="{{ item.image.url }}" class="card-img-top" alt="{{ item.name }}" 
+                         style="height: 280px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top d-flex align-items-center justify-content-center" 
+                         style="height: 280px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-utensils fa-5x text-white opacity-50"></i>
+                    </div>
+                    {% endif %}
+                    <div class="menu-item-overlay">
+                        <div class="text-white">
+                            <h5 class="mb-2">{{ item.name }}</h5>
+                            <p class="mb-0 small">{{ item.description|truncatewords:10|default:"Delicious dish" }}</p>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title fw-bold mb-2">{{ item.name }}</h5>
+                        <p class="card-text text-muted small flex-grow-1 mb-3">
+                            {{ item.description|truncatewords:12|default:"A delicious dish crafted with care" }}
+                        </p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-primary fw-bold fs-4">£{{ item.price }}</span>
+                            <a href="{% url 'restaurant:menu_detail' item.pk %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-5">
+            <a href="{% url 'restaurant:menu_list' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-utensils me-2"></i>View Full Menu
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Why Choose Us Section -->
+<section class="section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-4 mb-md-0">
+                <div class="pe-md-5">
+                    <h2 class="mb-4">A Culinary Journey Like No Other</h2>
+                    <p class="lead text-muted mb-4">
+                        At Django Restaurant, we believe that dining is more than just eating—it's an experience. 
+                        Our chefs combine traditional techniques with modern innovation to create dishes that 
+                        tantalize your taste buds.
+                    </p>
+                    <div class="row g-3 mt-4">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="feature-icon" style="width: 60px; height: 60px; margin-right: 1rem;">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Award Winning</h6>
+                                    <small class="text-muted">Recognized Excellence</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="feature-icon" style="width: 60px; height: 60px; margin-right: 1rem;">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Fresh Ingredients</h6>
+                                    <small class="text-muted">Locally Sourced</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="feature-icon" style="width: 60px; height: 60px; margin-right: 1rem;">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Expert Chefs</h6>
+                                    <small class="text-muted">Master Craftsmen</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="feature-icon" style="width: 60px; height: 60px; margin-right: 1rem;">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">Passion Driven</h6>
+                                    <small class="text-muted">Love in Every Bite</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-lg">
+                    <div class="card-body p-0">
+                        <div style="height: 400px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                    display: flex; align-items: center; justify-content: center; border-radius: 1.25rem;">
+                            <i class="fas fa-utensils fa-6x text-white opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Call to Action Section -->
+{% if not user.is_authenticated %}
+<section class="section bg-white">
+    <div class="container">
+        <div class="card shadow-lg" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);">
+            <div class="card-body text-center text-white p-5">
+                <h2 class="mb-3">Ready to Experience Excellence?</h2>
+                <p class="lead mb-4">Join our community and start ordering delicious food today</p>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{% url 'account_signup' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Create Free Account
+                    </a>
+                    <a href="{% url 'restaurant:menu_list' %}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-utensils me-2"></i>Browse Menu
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

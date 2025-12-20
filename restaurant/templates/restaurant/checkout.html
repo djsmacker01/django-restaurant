@@ -1,0 +1,565 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - Django Restaurant{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Declare Stripe variables in global scope (attach to window for explicit global access)
+    window.stripe = null;
+    window.elements = null;
+    window.paymentElement = null;
+    
+    // Also create local references for convenience
+    let stripe = window.stripe;
+    let elements = window.elements;
+    let paymentElement = window.paymentElement;
+    
+    // Function to initialize Stripe when it's available
+    function initializeStripe() {
+        // Check if Stripe.js is loaded
+        if (typeof Stripe === 'undefined') {
+            console.error('Stripe.js library is not loaded');
+            const paymentElementDiv = document.getElementById('payment-element');
+            const submitButton = document.getElementById('submit');
+            if (paymentElementDiv) {
+                paymentElementDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error Loading Payment System</strong><br>
+                        <small>Stripe.js library failed to load. Please check your internet connection and refresh the page.</small>
+                    </div>
+                `;
+            }
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+            return;
+        }
+        
+        // Check if Stripe keys are available
+        const stripePublishableKey = '{{ stripe_publishable_key }}';
+        const clientSecret = '{{ client_secret }}';
+        
+        if (!stripePublishableKey || !clientSecret || stripePublishableKey.includes('your') || clientSecret.includes('your')) {
+            // Show error if keys are missing
+            const paymentElementDiv = document.getElementById('payment-element');
+            const submitButton = document.getElementById('submit');
+            if (paymentElementDiv) {
+                paymentElementDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Payment System Not Configured</strong><br>
+                        <small>Stripe API keys are missing or invalid. Please contact support.</small>
+                    </div>
+                `;
+            }
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+            return;
+        }
+        
+        // Initialize Stripe
+        try {
+            window.stripe = Stripe(stripePublishableKey);
+            stripe = window.stripe;
+            
+            window.elements = stripe.elements({
+                clientSecret: clientSecret,
+                appearance: {
+                    theme: 'stripe',
+                    variables: {
+                        colorPrimary: '#c41e3a',
+                        colorBackground: '#ffffff',
+                        colorText: '#1a1a1a',
+                        colorDanger: '#f44336',
+                        fontFamily: 'Poppins, system-ui, sans-serif',
+                        spacingUnit: '4px',
+                        borderRadius: '12px',
+                    }
+                }
+            });
+            elements = window.elements;
+            
+            // Show loading state
+            const paymentElementDiv = document.getElementById('payment-element');
+            if (paymentElementDiv) {
+                paymentElementDiv.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading payment form...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Loading secure payment form...</p>
+                    </div>
+                `;
+                
+                // Create and mount payment element
+                window.paymentElement = elements.create('payment');
+                paymentElement = window.paymentElement;
+                paymentElement.mount('#payment-element');
+                
+                // Hide loading state after mount
+                paymentElement.on('ready', () => {
+                    console.log('Stripe payment element ready');
+                });
+            }
+            
+        } catch (error) {
+            console.error('Stripe initialization error:', error);
+            const paymentElementDiv = document.getElementById('payment-element');
+            const submitButton = document.getElementById('submit');
+            if (paymentElementDiv) {
+                paymentElementDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error Loading Payment Form</strong><br>
+                        <small>${error.message || 'Failed to initialize payment system. Please refresh the page.'}</small>
+                    </div>
+                `;
+            }
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+        }
+    }
+    
+    // Wait for both DOM and Stripe.js to be ready
+    function waitForStripeAndInitialize() {
+        if (typeof Stripe !== 'undefined') {
+            // Stripe is loaded, initialize immediately
+            initializeStripe();
+        } else {
+            // Wait for Stripe.js to load (check every 50ms, max 5 seconds)
+            let attempts = 0;
+            const maxAttempts = 100; // 5 seconds total
+            
+            const checkStripe = setInterval(function() {
+                attempts++;
+                if (typeof Stripe !== 'undefined') {
+                    clearInterval(checkStripe);
+                    initializeStripe();
+                } else if (attempts >= maxAttempts) {
+                    // Give up after max attempts
+                    clearInterval(checkStripe);
+                    console.error('Stripe.js failed to load after 5 seconds');
+                    const paymentElementDiv = document.getElementById('payment-element');
+                    const submitButton = document.getElementById('submit');
+                    if (paymentElementDiv) {
+                        paymentElementDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Error Loading Payment System</strong><br>
+                                <small>Stripe.js library failed to load. Please check your internet connection and refresh the page.</small>
+                            </div>
+                        `;
+                    }
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                    }
+                }
+            }, 50);
+        }
+    }
+    
+    // Start initialization when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', waitForStripeAndInitialize);
+    } else {
+        // DOM is already loaded
+        waitForStripeAndInitialize();
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="section-title">
+            <h2>Checkout</h2>
+            <p>Complete your order securely</p>
+        </div>
+
+        <div class="row">
+            <!-- Order Summary -->
+            <div class="col-lg-5 mb-4 mb-lg-0">
+                <div class="card shadow-lg">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <div class="feature-icon me-3" style="width: 60px; height: 60px;">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Order Summary</h5>
+                                <small class="text-white-50">{{ order_items|length }} item{{ order_items|length|pluralize }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="order-items-list">
+                            {% for item in order_items %}
+                            <div class="order-item mb-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-center">
+                                    {% if item.menu_item.image %}
+                                    <img src="{{ item.menu_item.image.url }}" 
+                                         alt="{{ item.menu_item.name }}" 
+                                         class="order-item-image me-3">
+                                    {% else %}
+                                    <div class="order-item-image bg-gradient d-flex align-items-center justify-content-center me-3">
+                                        <i class="fas fa-utensils text-white"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ item.menu_item.name }}</h6>
+                                        <small class="text-muted">Quantity: {{ item.quantity }} × £{{ item.price }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong class="text-primary">£{{ item.subtotal }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">
+                                    <i class="fas fa-receipt me-1"></i>Subtotal:
+                                </span>
+                                <span class="fw-bold">£{{ total_amount }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">
+                                    <i class="fas fa-truck me-1"></i>Delivery:
+                                </span>
+                                <span class="fw-bold text-success">
+                                    <i class="fas fa-check-circle me-1"></i>Free
+                                </span>
+                            </div>
+                            <hr class="my-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fs-5 fw-bold">
+                                    <i class="fas fa-pound-sign me-1"></i>Total:
+                                </span>
+                                <span class="fs-4 fw-bold text-primary">£{{ total_amount }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-md mt-4">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-shield-alt fa-2x text-primary me-3"></i>
+                            <div>
+                                <h6 class="mb-1">Secure Payment</h6>
+                                <small class="text-muted">Your payment is processed securely by Stripe</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Form -->
+            <div class="col-lg-7">
+                <div class="card shadow-lg">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <div class="feature-icon me-3" style="width: 60px; height: 60px;">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Payment Information</h5>
+                                <small class="text-white-50">Enter your payment details</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="payment-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-credit-card me-2"></i>Card Details
+                                </label>
+                                <small class="text-muted d-block mb-2">Enter your card information securely below</small>
+                                <div id="payment-element" class="mt-2">
+                                    <!-- Stripe Elements will create secure card input fields here -->
+                                </div>
+                            </div>
+                            <div id="payment-message" class="mt-3"></div>
+                            <button type="submit" id="submit" class="btn btn-primary btn-lg w-100 mt-4">
+                                <span id="button-text">
+                                    <i class="fas fa-lock me-2"></i>Pay £{{ total_amount }}
+                                </span>
+                                <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            </button>
+                        </form>
+                        
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex align-items-center text-muted small mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <span>Your payment is processed securely by Stripe. We never store your card details.</span>
+                            </div>
+                            {% if stripe_publishable_key and client_secret %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Test Mode:</strong> Use test card: <code>4242 4242 4242 4242</code><br>
+                                <small>Any future expiry date, any 3-digit CVC, any ZIP code</small>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Payment System Not Configured</strong><br>
+                                <small>Stripe API keys are missing. Please configure them in your .env file.</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{% url 'restaurant:cart' %}" class="text-decoration-none">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .order-item-image {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 0.75rem;
+        border: 2px solid var(--border-color);
+    }
+    
+    #payment-element {
+        padding: 1.5rem;
+        background: var(--bg-light);
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    #payment-message {
+        min-height: 30px;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    #payment-message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        animation: shake 0.5s;
+    }
+    
+    #payment-message.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+    }
+    
+    #spinner {
+        display: none;
+    }
+    
+    #submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+    
+    #submit {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+    }
+    
+    .payment-loading {
+        position: relative;
+    }
+    
+    .payment-loading::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 1.5s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+</style>
+
+<script>
+    // Payment form submission handler
+    // Note: stripe, elements, and paymentElement are declared in extra_js block
+    // Wait for DOM to be ready before setting up form handler
+    function setupPaymentForm() {
+        const form = document.getElementById('payment-form');
+        if (!form) {
+            // Form not found, try again later
+            setTimeout(setupPaymentForm, 100);
+            return;
+        }
+        
+        const submitButton = document.getElementById('submit');
+        const buttonText = document.getElementById('button-text');
+        const spinner = document.getElementById('spinner');
+        const paymentMessage = document.getElementById('payment-message');
+        
+        form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Check if Stripe is initialized (use window references to ensure we get the latest values)
+        if (!window.stripe || !window.elements || !window.paymentElement) {
+            paymentMessage.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span><strong>Error:</strong> Payment system is not initialized. Please refresh the page.</span>
+                </div>
+            `;
+            paymentMessage.className = 'alert alert-danger';
+            return;
+        }
+        
+        // Disable form and show loading state
+        submitButton.disabled = true;
+        submitButton.classList.add('payment-loading');
+        buttonText.style.display = 'none';
+        spinner.classList.remove('d-none');
+        paymentMessage.textContent = '';
+        paymentMessage.className = '';
+        
+        try {
+            const {error, paymentIntent} = await window.stripe.confirmPayment({
+                elements: window.elements,
+                confirmParams: {
+                    return_url: '{{ request.scheme }}://{{ request.get_host }}{% url "restaurant:payment_success" %}?payment_intent={PAYMENT_INTENT_ID}',
+                },
+                redirect: 'if_required'
+            });
+            
+            if (error) {
+                // Show error message
+                paymentMessage.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <span><strong>Payment Error:</strong> ${error.message}</span>
+                    </div>
+                `;
+                paymentMessage.className = 'alert alert-danger';
+                
+                // Re-enable form
+                submitButton.disabled = false;
+                submitButton.classList.remove('payment-loading');
+                buttonText.style.display = 'inline';
+                spinner.classList.add('d-none');
+                
+                // Scroll to error message
+                paymentMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else if (paymentIntent) {
+                if (paymentIntent.status === 'succeeded') {
+                    // Show success message briefly before redirect
+                    paymentMessage.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <span><strong>Payment Successful!</strong> Redirecting...</span>
+                        </div>
+                    `;
+                    paymentMessage.className = 'alert alert-success';
+                    
+                    // Redirect to success page
+                    setTimeout(() => {
+                        window.location.href = '{% url "restaurant:payment_success" %}?payment_intent=' + paymentIntent.id;
+                    }, 1000);
+                } else if (paymentIntent.status === 'requires_action') {
+                    // Payment requires additional action (3D Secure, etc.)
+                    paymentMessage.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span>Please complete the additional authentication step.</span>
+                        </div>
+                    `;
+                    paymentMessage.className = 'alert alert-info';
+                } else {
+                    // Other payment status
+                    paymentMessage.innerHTML = `
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clock me-2"></i>
+                            <span>Payment is being processed. Please wait...</span>
+                        </div>
+                    `;
+                    paymentMessage.className = 'alert alert-info';
+                }
+            }
+        } catch (err) {
+            // Handle unexpected errors
+            paymentMessage.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span><strong>Unexpected Error:</strong> ${err.message || 'Something went wrong. Please try again.'}</span>
+                </div>
+            `;
+            paymentMessage.className = 'alert alert-danger';
+            
+            submitButton.disabled = false;
+            submitButton.classList.remove('payment-loading');
+            buttonText.style.display = 'inline';
+            spinner.classList.add('d-none');
+        }
+        });
+        
+        // Handle payment element changes (only if paymentElement exists)
+        // This will be set up after Stripe initializes
+        function setupPaymentElementListener() {
+            if (typeof window.paymentElement !== 'undefined' && window.paymentElement) {
+                window.paymentElement.on('change', (event) => {
+                    if (event.error) {
+                        if (paymentMessage) {
+                            paymentMessage.textContent = event.error.message;
+                            paymentMessage.className = 'alert alert-warning';
+                        }
+                    } else {
+                        if (paymentMessage) {
+                            paymentMessage.textContent = '';
+                            paymentMessage.className = '';
+                        }
+                    }
+                });
+            } else {
+                // Try again later if paymentElement not ready
+                setTimeout(setupPaymentElementListener, 100);
+            }
+        }
+        
+        // Set up payment element listener after a short delay
+        setTimeout(setupPaymentElementListener, 500);
+    }
+    
+    // Start setting up the form when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupPaymentForm);
+    } else {
+        setupPaymentForm();
+    }
+</script>
+{% endblock %}
