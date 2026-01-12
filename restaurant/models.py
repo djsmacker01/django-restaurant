@@ -3,13 +3,11 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from decimal import Decimal
 
-# Create your models here.
 class MenuItem(models.Model):
     """
     Model representing a menu item in the restaurant.
     
     """
-    # Category choices
     CATEGORY_CHOICES = [
         ('appetizer', 'Appetizer'),  # ← Added quotes
         ('main', 'Main Course'),
@@ -17,7 +15,6 @@ class MenuItem(models.Model):
         ('drink', 'Drink'),
     ]
 
-    # fields
     name = models.CharField(
         max_length=200,
         help_text = "Enter the name of the menu item"
@@ -201,7 +198,6 @@ class OrderItem(models.Model):
             self.price = self.menu_item.price
         self.subtotal = self.price * self.quantity
         super().save(*args, **kwargs)
-        # Update order total
         self.order.calculate_total()
     
     def __str__(self):

@@ -26,6 +26,5 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('restaurant/', include('restaurant.urls')),
 ]
-# Serve media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -18,7 +18,6 @@ class Command(BaseCommand):
         self.stdout.write('CREATING TEST SCENARIOS')
         self.stdout.write('=' * 60)
         
-        # Ensure we have menu items
         if MenuItem.objects.count() < 5:
             self.stdout.write(
                 self.style.WARNING(
@@ -50,7 +49,6 @@ class Command(BaseCommand):
         user.set_password('testpass123')
         user.save()
         
-        # Create a completed order
         order = Order.objects.create(
             user=user,
             order_number='SCENARIO-001',
@@ -59,7 +57,6 @@ class Command(BaseCommand):
             total_amount=Decimal('0.00'),
         )
         
-        # Add multiple items
         items = MenuItem.objects.filter(is_available=True)[:5]
         for item in items:
             OrderItem.objects.create(
@@ -128,9 +125,8 @@ class Command(BaseCommand):
             }
         )
         user.set_password('testpass123')
-        user.save()
+        user.save(        )
         
-        # Create or get pending cart
         cart, created = Order.objects.get_or_create(
             user=user,
             status='pending',
@@ -138,7 +134,6 @@ class Command(BaseCommand):
             defaults={'order_number': 'CART-TEST-001'}
         )
         
-        # Add multiple items with different quantities
         items = MenuItem.objects.filter(is_available=True)[:4]
         for item in items:
             OrderItem.objects.get_or_create(
@@ -190,7 +185,6 @@ class Command(BaseCommand):
                 total_amount=Decimal('0.00'),
             )
             
-            # Add items
             for item in items:
                 OrderItem.objects.create(
                     order=order,
@@ -206,6 +200,9 @@ class Command(BaseCommand):
                     f'({order.get_status_display()}, {order.get_payment_status_display()})'
                 )
             )
+
+
+
 
 
 

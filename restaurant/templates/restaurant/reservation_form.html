@@ -34,7 +34,7 @@
                         </div>
                         {% endif %}
 
-                        <form method="post" novalidate id="reservationForm">
+                        <form method="post" novalidate id="reservationForm" action="{% if reservation %}{% url 'restaurant:reservation_update' reservation.pk %}{% else %}{% url 'restaurant:reservation_create' %}{% endif %}">
                             {% csrf_token %}
                             
                             <div class="row">
@@ -131,7 +131,6 @@
                                 </small>
                             </div>
 
-                            <!-- Info Box -->
                             <div class="alert alert-info mb-4">
                                 <div class="d-flex">
                                     <i class="fas fa-lightbulb fa-2x text-primary me-3"></i>
