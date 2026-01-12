@@ -40,6 +40,7 @@ class MenuItemModelTest(TestCase):
             price=Decimal('5.99')
         )
         items = list(MenuItem.objects.all())
+        # Should be ordered by category, then name
         self.assertEqual(items[0].category, 'appetizer')
 
 
@@ -234,13 +235,16 @@ class ViewTests(TestCase):
     
     def test_menu_item_create_requires_staff(self):
         """Test that menu item creation requires staff status."""
+        # Not logged in
         response = self.client.get(reverse('restaurant:menu_item_create'))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)  # Redirect to login
         
+        # Logged in but not staff
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('restaurant:menu_item_create'))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)  # Redirect
         
+        # Staff user
         self.client.login(username='staff', password='testpass123')
         response = self.client.get(reverse('restaurant:menu_item_create'))
         self.assertEqual(response.status_code, 200)
@@ -261,8 +265,9 @@ class ViewTests(TestCase):
             'menu_item_id': self.menu_item.pk,
             'quantity': 1
         })
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)  # Redirect to login
         
+        # Logged in
         self.client.login(username='testuser', password='testpass123')
         response = self.client.post(reverse('restaurant:add_to_cart'), {
             'menu_item_id': self.menu_item.pk,
@@ -286,6 +291,7 @@ class ViewTests(TestCase):
         
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('restaurant:checkout'))
+        # May redirect if cart is empty, or show checkout page
         self.assertIn(response.status_code, [200, 302])
     
     def test_order_list_requires_login(self):
@@ -300,8 +306,9 @@ class ViewTests(TestCase):
     def test_reservation_create_requires_login(self):
         """Test that reservation creation requires login."""
         response = self.client.get(reverse('restaurant:reservation_create'))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)  # Redirect to login
         
+        # Logged in
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('restaurant:reservation_create'))
         self.assertEqual(response.status_code, 200)
@@ -319,16 +326,20 @@ class ViewTests(TestCase):
         """Test that adding to cart creates a pending order."""
         self.client.login(username='testuser', password='testpass123')
         
+        # No orders initially
         self.assertEqual(Order.objects.filter(user=self.user, status='pending').count(), 0)
         
+        # Add to cart
         self.client.post(reverse('restaurant:add_to_cart'), {
             'menu_item_id': self.menu_item.pk,
             'quantity': 2
         })
         
+        # Should have one pending order
         orders = Order.objects.filter(user=self.user, status='pending')
         self.assertEqual(orders.count(), 1)
         
+        # Should have one order item
         order = orders.first()
         self.assertEqual(order.order_items.count(), 1)
         self.assertEqual(order.order_items.first().quantity, 2)
@@ -337,6 +348,7 @@ class ViewTests(TestCase):
         """Test updating cart item quantity."""
         self.client.login(username='testuser', password='testpass123')
         
+        # Add to cart
         self.client.post(reverse('restaurant:add_to_cart'), {
             'menu_item_id': self.menu_item.pk,
             'quantity': 1
@@ -345,14 +357,17 @@ class ViewTests(TestCase):
         order = Order.objects.get(user=self.user, status='pending')
         order_item = order.order_items.first()
         
+        # Update quantity
         self.client.post(reverse('restaurant:update_cart_item', args=[order_item.pk]), {
             'quantity': 3
         })
         
+        # Quantity should be updated
         order_item.refresh_from_db()
         order.refresh_from_db()
         self.assertEqual(order_item.quantity, 3)
         
+        # Total should be recalculated
         expected_total = order_item.price * 3
         self.assertEqual(order.total_amount, expected_total)
     
@@ -360,6 +375,7 @@ class ViewTests(TestCase):
         """Test removing item from cart."""
         self.client.login(username='testuser', password='testpass123')
         
+        # Add to cart
         self.client.post(reverse('restaurant:add_to_cart'), {
             'menu_item_id': self.menu_item.pk,
             'quantity': 1
@@ -368,11 +384,14 @@ class ViewTests(TestCase):
         order = Order.objects.get(user=self.user, status='pending')
         order_item = order.order_items.first()
         
+        # Remove item
         self.client.post(reverse('restaurant:remove_cart_item', args=[order_item.pk]))
         
+        # Item should be deleted
         order.refresh_from_db()
         self.assertEqual(order.order_items.count(), 0)
         
+        # Total should be recalculated to 0
         self.assertEqual(order.total_amount, Decimal('0.00'))
     
     def test_reservation_form_submission(self):
@@ -390,12 +409,18 @@ class ViewTests(TestCase):
             'special_requests': 'Window seat please'
         })
         
+        # Should redirect to reservation detail (302) or show form with errors (200)
+        # Check if reservation was created instead
         if response.status_code == 302:
+            # Success - reservation created
             reservation = Reservation.objects.get(user=self.user)
             self.assertEqual(reservation.name, 'Test User')
             self.assertEqual(reservation.number_of_guests, 4)
         else:
+            # Form may have validation errors, check if reservation was still created
+            # or verify form is displayed
             self.assertIn(response.status_code, [200, 302])
+            # If 200, form might have errors, but let's check if reservation exists
             if Reservation.objects.filter(user=self.user).exists():
                 reservation = Reservation.objects.get(user=self.user)
                 self.assertEqual(reservation.name, 'Test User')
@@ -411,6 +436,7 @@ class CustomLogicTest(TestCase):
             email='test@example.com',
             password='testpass123'
         )
+        # Create menu items with different categories
         for category in ['appetizer', 'main', 'dessert', 'drink']:
             MenuItem.objects.create(
                 name=f'{category.title()} Item',
@@ -424,11 +450,13 @@ class CustomLogicTest(TestCase):
         categories = {}
         menu_items = MenuItem.objects.filter(is_available=True)
         
+        # Custom logic: group items by category
         for item in menu_items:
             if item.category not in categories:
                 categories[item.category] = []
             categories[item.category].append(item)
         
+        # Verify grouping
         self.assertIn('appetizer', categories)
         self.assertIn('main', categories)
         self.assertEqual(len(categories['appetizer']), 1)
@@ -441,11 +469,12 @@ class CustomLogicTest(TestCase):
             status='pending'
         )
         
+        # Add multiple items
         items = MenuItem.objects.all()[:3]
         total_expected = Decimal('0.00')
         
         for item in items:
-            quantity = 2 if item.category == 'main' else 1
+            quantity = 2 if item.category == 'main' else 1  # Conditional logic
             OrderItem.objects.create(
                 order=order,
                 menu_item=item,
@@ -454,11 +483,13 @@ class CustomLogicTest(TestCase):
             )
             total_expected += item.price * quantity
         
+        # Calculate total
         calculated_total = order.calculate_total()
         self.assertEqual(calculated_total, total_expected)
     
     def test_reservation_status_filtering(self):
         """Test filtering reservations by status."""
+        # Create reservations with different statuses
         statuses = ['pending', 'confirmed', 'cancelled']
         for status in statuses:
             Reservation.objects.create(
@@ -472,9 +503,11 @@ class CustomLogicTest(TestCase):
                 status=status
             )
         
+        # Filter by status
         pending_reservations = Reservation.objects.filter(status='pending')
         self.assertEqual(pending_reservations.count(), 1)
         
+        # Count by status using loop
         status_counts = {}
         for reservation in Reservation.objects.all():
             if reservation.status not in status_counts:

@@ -35,6 +35,7 @@ def is_staff_user(user):
 
 def home(request):
     """Home page view."""
+    # Get featured menu items (available items)
     featured_items = MenuItem.objects.filter(is_available=True)[:6]
     
     context = {
@@ -52,15 +53,18 @@ def menu_list(request):
     category_filter = request.GET.get('category', '')
     search_query = request.GET.get('search', '')
     
+    # Filter by category
     if category_filter:
         menu_items = menu_items.filter(category=category_filter)
     
+    # Search functionality
     if search_query:
         menu_items = menu_items.filter(
             Q(name__icontains=search_query) |
             Q(description__icontains=search_query)
         )
     
+    # Group by category for display
     categories = {}
     for item in menu_items:
         if item.category not in categories:
@@ -162,6 +166,7 @@ def add_to_cart(request):
                 messages.error(request, 'Menu item not found or unavailable.')
                 return redirect('restaurant:menu_list')
             
+            # Get or create cart (pending order)
             cart, created = Order.objects.get_or_create(
                 user=request.user,
                 status='pending',
@@ -169,6 +174,7 @@ def add_to_cart(request):
                 defaults={'order_number': f'CART-{uuid.uuid4().hex[:8].upper()}'}
             )
             
+            # Check if item already in cart
             order_item, created = OrderItem.objects.get_or_create(
                 order=cart,
                 menu_item=menu_item,
@@ -176,16 +182,20 @@ def add_to_cart(request):
             )
             
             if not created:
+                # Update quantity if item already exists
                 order_item.quantity += quantity
                 order_item.save()
             
             cart.calculate_total()
             messages.success(request, f'✓ Added {quantity}x {menu_item.name} to cart! Continue shopping or view your cart.')
             
+            # Redirect back to menu page, preserving any filters
             referer = request.META.get('HTTP_REFERER', '')
             if referer and ('menu' in referer or 'restaurant/menu' in referer):
+                # Extract query parameters from referer to preserve filters
                 parsed = urlparse(referer)
                 query_params = parse_qs(parsed.query)
+                # Build URL with preserved filters
                 url = reverse('restaurant:menu_list')
                 if query_params:
                     params = '&'.join([f"{k}={v[0]}" for k, v in query_params.items()])
@@ -205,6 +215,7 @@ def cart(request):
         cart = Order.objects.get(user=request.user, status='pending', payment_status='pending')
         order_items = cart.order_items.all()
         
+        # Ensure total is up-to-date
         cart.calculate_total()
     except Order.DoesNotExist:
         cart = None
@@ -233,6 +244,7 @@ def update_cart_item(request, item_id):
         order_item.delete()
         messages.success(request, 'Item removed from cart!')
     
+    # Recalculate cart total after update/delete
     cart.calculate_total()
     
     return redirect('restaurant:cart')
@@ -246,6 +258,7 @@ def remove_cart_item(request, item_id):
     cart = order_item.order
     order_item.delete()
     
+    # Recalculate cart total after item removal
     cart.calculate_total()
     
     messages.success(request, 'Item removed from cart!')
@@ -266,8 +279,10 @@ def checkout(request):
         messages.error(request, 'Your cart is empty.')
         return redirect('restaurant:cart')
     
+    # Calculate total
     total_amount = cart.calculate_total()
     
+    # Create Stripe payment intent
     if not stripe:
         messages.error(request, 'Payment system is not available. Please contact support.')
         return redirect('restaurant:cart')
@@ -280,6 +295,7 @@ def checkout(request):
         return redirect('restaurant:cart')
     
     try:
+        # Convert to cents for Stripe
         amount_in_cents = int(total_amount * 100)
         
         payment_intent = stripe.PaymentIntent.create(
@@ -321,6 +337,7 @@ def payment_success(request):
                 stripe_payment_intent_id=payment_intent_id
             )
             
+            # Verify payment with Stripe
             if stripe:
                 try:
                     payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
@@ -336,6 +353,7 @@ def payment_success(request):
                 except stripe.error.StripeError as e:
                     messages.error(request, f'Payment verification error: {str(e)}')
             else:
+                # If Stripe is not available, assume payment succeeded (for testing)
                 order.payment_status = 'paid'
                 order.status = 'processing'
                 order.save()
@@ -387,17 +405,21 @@ def order_invoice(request, pk):
     """Generate and download invoice PDF for an order."""
     order = get_object_or_404(Order, pk=pk, user=request.user)
     
+    # Only allow invoice download for paid orders
     if order.payment_status != 'paid':
         messages.error(request, 'Invoice is only available for paid orders.')
         return redirect('restaurant:order_detail', pk=pk)
     
     order_items = order.order_items.all()
     
+    # Create PDF buffer
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch, bottomMargin=0.5*inch)
     
+    # Container for the 'Flowable' objects
     elements = []
     
+    # Define styles
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         'CustomTitle',
@@ -421,6 +443,7 @@ def order_invoice(request, pk):
     normal_style = styles['Normal']
     normal_style.fontSize = 10
     
+    # Restaurant information
     restaurant_info = [
         [Paragraph('<b>FLAVOUR RESTAURANT</b>', title_style)],
         [Paragraph('32 Chepstow', normal_style)],
@@ -438,9 +461,11 @@ def order_invoice(request, pk):
     elements.append(restaurant_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Invoice title
     elements.append(Paragraph('INVOICE', heading_style))
     elements.append(Spacer(1, 0.2*inch))
     
+    # Order and customer information
     customer_name = order.user.get_full_name() if order.user.get_full_name() else order.user.username
     
     info_data = [
@@ -469,10 +494,13 @@ def order_invoice(request, pk):
     elements.append(info_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Order items table
     elements.append(Paragraph('Order Items', heading_style))
     
+    # Table header
     table_data = [['Item', 'Category', 'Quantity', 'Unit Price', 'Subtotal']]
     
+    # Table rows
     for item in order_items:
         table_data.append([
             item.menu_item.name,
@@ -482,6 +510,7 @@ def order_invoice(request, pk):
             f'£{item.subtotal:.2f}'
         ])
     
+    # Table footer with total
     table_data.append([
         '',
         '',
@@ -492,6 +521,7 @@ def order_invoice(request, pk):
     
     items_table = Table(table_data, colWidths=[2.5*inch, 1.5*inch, 0.8*inch, 1.2*inch, 1*inch])
     items_table.setStyle(TableStyle([
+        # Header row
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#c41e3a')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
@@ -500,6 +530,7 @@ def order_invoice(request, pk):
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('TOPPADDING', (0, 0), (-1, 0), 12),
         
+        # Data rows
         ('BACKGROUND', (0, 1), (-1, -2), colors.white),
         ('TEXTCOLOR', (0, 1), (-1, -2), colors.HexColor('#1a1a1a')),
         ('ALIGN', (0, 1), (-1, -2), 'LEFT'),
@@ -511,6 +542,7 @@ def order_invoice(request, pk):
         ('TOPPADDING', (0, 1), (-1, -2), 8),
         ('GRID', (0, 0), (-1, -2), 0.5, colors.HexColor('#dee2e6')),
         
+        # Total row
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#f8f9fa')),
         ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#1a1a1a')),
         ('ALIGN', (0, -1), (2, -1), 'RIGHT'),
@@ -524,6 +556,7 @@ def order_invoice(request, pk):
     elements.append(items_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Payment information
     payment_info = [
         [Paragraph('<b>Payment Information</b>', heading_style)],
         [Paragraph(f'Payment Status: <b>{order.get_payment_status_display()}</b>', normal_style)],
@@ -542,6 +575,7 @@ def order_invoice(request, pk):
     elements.append(payment_table)
     elements.append(Spacer(1, 0.3*inch))
     
+    # Special instructions if any
     if order.special_instructions:
         instructions = [
             [Paragraph('<b>Special Instructions</b>', heading_style)],
@@ -556,6 +590,7 @@ def order_invoice(request, pk):
         elements.append(instructions_table)
         elements.append(Spacer(1, 0.3*inch))
     
+    # Footer
     footer_text = Paragraph(
         '<i>Thank you for your order! We appreciate your business.</i><br/>'
         '<i>For any inquiries, please contact us at info@flavourrestaurant.com</i>',
@@ -570,8 +605,10 @@ def order_invoice(request, pk):
     )
     elements.append(footer_text)
     
+    # Build PDF
     doc.build(elements)
     
+    # Get PDF value from buffer
     buffer.seek(0)
     response = HttpResponse(buffer.read(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Invoice_{order.order_number}.pdf"'
@@ -587,8 +624,8 @@ def reservation_create(request):
         if form.is_valid():
             reservation = form.save(commit=False)
             reservation.user = request.user
-            reservation.email = request.user.email
-            reservation.status = 'pending'
+            reservation.email = request.user.email  # Use user's email
+            reservation.status = 'pending'  # Start as pending for admin review
             reservation.save()
             messages.success(request, 'Reservation created successfully! We will confirm it shortly.')
             return redirect('restaurant:reservation_detail', pk=reservation.pk)
@@ -607,6 +644,7 @@ def reservation_list(request):
     """View user's reservations."""
     reservations = Reservation.objects.filter(user=request.user).order_by('date', 'time')
     
+    # Filter by status if provided
     status_filter = request.GET.get('status', '')
     if status_filter:
         reservations = reservations.filter(status=status_filter)
@@ -634,6 +672,7 @@ def reservation_update(request, pk):
     """View for updating a reservation."""
     reservation = get_object_or_404(Reservation, pk=pk, user=request.user)
     
+    # Only allow updates for pending or confirmed reservations
     if reservation.status in ['cancelled', 'completed']:
         messages.error(request, 'Cannot update a cancelled or completed reservation.')
         return redirect('restaurant:reservation_detail', pk=reservation.pk)
