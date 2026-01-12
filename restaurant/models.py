@@ -1,6 +1,6 @@
 from django.db import models
 
-# Create your models here.
+
 class MenuItem(models.Model):
     """
     Model representing a menu item in the restaurant.
