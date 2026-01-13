@@ -4,7 +4,10 @@ from restaurant.models import MenuItem, Order, OrderItem, Reservation
 from decimal import Decimal
 from datetime import date, time, timedelta
 from django.utils import timezone
+from django.core.files import File
 import random
+import os
+from django.conf import settings
 
 
 class Command(BaseCommand):
@@ -41,6 +44,34 @@ class Command(BaseCommand):
     def create_menu_items(self):
         """Create comprehensive menu items."""
         self.stdout.write('\n[1/4] Creating Menu Items...')
+        
+        # Mapping of menu item names to image filenames
+        image_mapping = {
+            'Caesar Salad': 'caesar-salad.jpg',
+            'Bruschetta': 'Bruschetta.jpg',
+            'Mozzarella Sticks': 'Mozzarella.jpg',
+            'Soup of the Day': 'soap_of_d_day.jpg',
+            'Chicken Wings': 'buffaloWings.jpg',
+            'Grilled Salmon': 'skillet-seared-salmon-lemon-butter-sauce-4.jpg',
+            'Beef Tenderloin': 'Beef_Tenderloin.jpeg',
+            'Margherita Pizza': 'Margherita_Pizza.webp',
+            'Chicken Parmesan': 'Chicken-Parmesan-Recipe-1.webp',
+            'Fish and Chips': 'Fis_crispy_chips.jpg',
+            'Vegetarian Risotto': 'Vegetarian_Risotto.jpg',
+            'BBQ Ribs': 'BBQ_Ribs.jpg',
+            'Chocolate Lava Cake': 'Chocolate_Cake.jpg',
+            'Tiramisu': 'Tiramisu.webp',
+            'New York Cheesecake': 'Perfect-New-York-Cheesecake-4.webp',
+            'Apple Pie': 'Apple-Pie.jpg',
+            'Ice Cream Sundae': 'Ice_Cream_Sundae.webp',
+            'Red Wine': 'House_selection_of_premium_red_wine..jpeg',
+            'White Wine': 'white_whine.jpg',
+            'Fresh Orange Juice': 'Homemade-Orange-Juice.jpg',
+            'Espresso': 'Espresso-coffee-Italian-breakfast-4.jpg',
+            'Cappuccino': 'Cappuccino.jpg',
+            'Coca Cola': 'Coca_Cola.jpg',
+            'Craft Beer': 'Craft_Beer.jpg',
+        }
         
         menu_items = [
            
@@ -221,11 +252,35 @@ class Command(BaseCommand):
         ]
         
         created_count = 0
+        media_path = os.path.join(settings.BASE_DIR, 'media', 'menu_images')
+        
         for item_data in menu_items:
             item, created = MenuItem.objects.get_or_create(
                 name=item_data['name'],
                 defaults=item_data
             )
+            
+            # Assign image if it exists and item doesn't have one
+            if not item.image and item.name in image_mapping:
+                image_filename = image_mapping[item.name]
+                image_path = os.path.join(media_path, image_filename)
+                
+                if os.path.exists(image_path):
+                    try:
+                        with open(image_path, 'rb') as f:
+                            item.image.save(image_filename, File(f), save=True)
+                        self.stdout.write(
+                            self.style.SUCCESS(f'  ✓ Assigned image to: {item.name}')
+                        )
+                    except Exception as e:
+                        self.stdout.write(
+                            self.style.WARNING(f'  ⚠ Could not assign image to {item.name}: {e}')
+                        )
+                else:
+                    self.stdout.write(
+                        self.style.WARNING(f'  ⚠ Image not found: {image_path}')
+                    )
+            
             if created:
                 created_count += 1
                 self.stdout.write(
