@@ -1,452 +1,295 @@
-# Django Restaurant - Full Stack Web Application
+# Django Restaurant 🍽️
 
-A comprehensive full-stack restaurant management web application built with Django/Python, featuring online ordering, table reservations, and payment processing.
+A full-stack restaurant management web application I built with Django. This project lets customers browse menus, place orders, make reservations, and handle payments through Stripe. It's been a great learning experience building something that actually works end-to-end!
 
-## Table of Contents
+## What This Project Does
 
-- [Project Overview](#project-overview)
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Database Setup](#database-setup)
-- [Running the Application](#running-the-application)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Security](#security)
-- [Project Structure](#project-structure)
-- [Assessment Criteria Coverage](#assessment-criteria-coverage)
+This is a complete restaurant platform where:
 
-## Project Overview
+**For Customers:**
+- Browse and search through menu items organized by category
+- Add items to a shopping cart and manage quantities
+- Checkout securely using Stripe payment processing
+- View order history and track order status
+- Make table reservations with date/time validation
+- Manage their reservations (view, update, cancel)
 
-Django Restaurant is a full-stack web application that allows customers to:
-- Browse and search menu items
-- Place online orders with shopping cart functionality
-- Make table reservations
-- Process payments securely using Stripe
-- View order history and reservation details
-
-Staff members can:
-- Manage menu items (Create, Read, Update, Delete)
-- View and manage orders
+**For Staff:**
+- Manage menu items (add, edit, delete) through a staff-only interface
+- View and manage customer orders
 - View and manage reservations
+- Access everything through the Django admin panel
 
-**Why users need to register/login:**
-- **Orders**: Users must be authenticated to place orders, ensuring we can track order history, contact customers for delivery, and process payments securely.
-- **Reservations**: Users must be authenticated to make reservations, allowing us to contact them for confirmations and manage their booking history.
+**Why Login is Required:**
+I made authentication required for orders and reservations because it ensures we can track order history, contact customers for delivery, process payments securely, and manage reservations properly. It's a real-world requirement that makes sense for a restaurant platform.
 
-## Features
+## Features I'm Proud Of
 
-### 1. Menu Management
-- Browse menu items by category (Appetizers, Main Courses, Desserts, Drinks)
-- Search functionality
-- Detailed menu item pages with images
-- Staff-only menu item creation and editing
+### Menu System
+- Clean, organized menu browsing with category filters
+- Search functionality to find items quickly
+- Detailed item pages with images and descriptions
+- Staff can easily add/edit menu items with image uploads
 
-### 2. Shopping Cart & Orders
-- Add items to cart
-- Update quantities
-- Remove items
-- Secure checkout with Stripe payment processing
-- Order history and tracking
-- Order status management
+### Shopping Cart & Checkout
+- Full shopping cart functionality (add, update quantities, remove items)
+- Secure Stripe integration for payments
+- Order tracking with status updates
+- Order history so customers can see past purchases
+- PDF invoice generation for completed orders
 
-### 3. Table Reservations
-- Create, view, update, and cancel reservations
-- Date and time validation
-- Business hours validation (11:00 AM - 10:00 PM)
-- Guest count validation (1-20 guests)
-- Reservation status tracking
+### Reservations
+- Easy reservation booking system
+- Smart validation (can't book in the past, must be during business hours)
+- Guest count validation (1-20 people)
+- Customers can view, update, or cancel their reservations
 
-### 4. Authentication & Authorization
-- User registration and login (django-allauth)
-- Login/register pages restricted to anonymous users only
+### Authentication & Security
+- User registration and login using django-allauth
 - Staff-only access to admin functions
-- User-specific order and reservation views
+- Environment variables for all sensitive data
+- CSRF protection and secure password handling
 
-### 5. Payment Processing
-- Stripe integration for secure payments
-- Payment intent creation and verification
-- Success and failure feedback
-- Payment status tracking
+## Tech Stack
 
-## Technology Stack
+I used:
+- **Backend**: Django 5.2.7 with Python 3.13
+- **Database**: SQLite for development (easy to switch to PostgreSQL for production)
+- **Authentication**: django-allauth (handles all the auth complexity)
+- **Payments**: Stripe (industry standard, secure, well-documented)
+- **Frontend**: Bootstrap 5.3 for responsive design
+- **Image Handling**: Pillow for menu item images
+- **PDF Generation**: ReportLab for invoice creation
 
-- **Backend**: Django 5.2.7, Python 3.13
-- **Database**: SQLite (development), PostgreSQL (production recommended)
-- **Authentication**: django-allauth
-- **Payment Processing**: Stripe
-- **Frontend**: Bootstrap 5.3, HTML5, CSS3, JavaScript
-- **Image Handling**: Pillow
-- **Environment Management**: python-dotenv
-
-## Installation
+## Getting Started
 
 ### Prerequisites
-
 - Python 3.8 or higher
-- pip (Python package manager)
-- Git (for version control)
+- pip (comes with Python)
+- Git (if you're cloning this)
 
-### Step 1: Clone the Repository
+### Installation Steps
 
-```bash
-git clone <repository-url>
-cd django-restaurant
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd django-restaurant
+   ```
 
-### Step 2: Create Virtual Environment
+2. **Set up a virtual environment** (trust me, you want this)
+   ```bash
+   # Windows
+   python -m venv venv
+   venv\Scripts\activate
 
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
+   # Linux/Mac
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-# Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
-```
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Step 3: Install Dependencies
+4. **Set up environment variables**
+   
+   Create a `.env` file in the project root:
+   ```env
+   SECRET_KEY=your-secret-key-here
+   DEBUG=True
+   STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+   STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+   ```
+   
+   **Important**: Never commit your `.env` file! It's already in `.gitignore`.
 
-```bash
-pip install -r requirements.txt
-```
+5. **Set up the database**
+   ```bash
+   python manage.py migrate
+   ```
 
-### Step 4: Environment Variables
+6. **Create a superuser** (so you can access the admin panel)
+   ```bash
+   python manage.py createsuperuser
+   ```
 
-Create a `.env` file in the project root (or use `settings.env`):
+7. **Load some sample data** (optional, but helpful for testing)
+   ```bash
+   python manage.py create_sample_data --full
+   ```
+   
+   This creates menu items, test users, sample orders, and reservations. Super handy for seeing how everything works!
 
-```env
-SECRET_KEY=your-secret-key-here
-DEBUG=True
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
-STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-```
+8. **Run the development server**
+   ```bash
+   python manage.py runserver
+   ```
 
-**Important**: Never commit the `.env` file to version control. It's already in `.gitignore`.
+9. **Open your browser**
+   - Home: http://127.0.0.1:8000/
+   - Admin: http://127.0.0.1:8000/admin/
+   - Menu: http://127.0.0.1:8000/restaurant/menu/
 
-## Configuration
+## Stripe Setup (For Payments)
 
-### Database Configuration
+To get payments working:
 
-The application uses SQLite by default for development. For production, update `settings.py`:
+1. Sign up for a free Stripe account at https://stripe.com
+2. Get your test API keys from the Stripe Dashboard (make sure you're in test mode!)
+3. Add them to your `.env` file:
+   ```env
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_PUBLISHABLE_KEY=pk_test_...
+   ```
+4. Restart your Django server
+5. Test with Stripe's test card: `4242 4242 4242 4242`
 
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-    }
-}
-```
-
-### Stripe Configuration
-
-1. Sign up for a Stripe account at https://stripe.com
-2. Get your API keys from the Stripe Dashboard
-3. Add them to your `.env` file
-4. For testing, use Stripe test keys (start with `sk_test_` and `pk_test_`)
-
-## Database Setup
-
-### Create Migrations
-
-```bash
-python manage.py makemigrations
-```
-
-### Apply Migrations
-
-```bash
-python manage.py migrate
-```
-
-### Create Superuser (Admin)
-
-```bash
-python manage.py createsuperuser
-```
-
-Follow the prompts to create an admin account.
-
-### Load Sample Data (Optional)
-
-You can create menu items through the admin panel at `/admin/` or use the staff interface at `/restaurant/menu/create/`.
-
-## Running the Application
-
-### Development Server
-
-```bash
-python manage.py runserver
-```
-
-The application will be available at `http://127.0.0.1:8000/`
-
-### Access Points
-
-- **Home**: http://127.0.0.1:8000/
-- **Menu**: http://127.0.0.1:8000/restaurant/menu/
-- **Admin Panel**: http://127.0.0.1:8000/admin/
-- **Login**: http://127.0.0.1:8000/accounts/login/
-- **Sign Up**: http://127.0.0.1:8000/accounts/signup/
+I've included detailed guides in the repo:
+- `QUICK_STRIPE_SETUP.md` - Fast setup guide
+- `STRIPE_SETUP_GUIDE.md` - More detailed instructions
+- `DEBUG_CHECKOUT.md` - Troubleshooting tips
 
 ## Testing
 
-### Run All Tests
+I wrote a comprehensive test suite covering models, forms, views, and custom logic. Run it with:
 
 ```bash
 python manage.py test
 ```
 
-### Run Specific Test Suite
+The tests cover:
+- Model creation and relationships
+- Form validation
+- View authorization (who can access what)
+- Custom Python logic (loops, conditionals, calculations)
+- Cart operations
+- Order processing
 
-```bash
-python manage.py test restaurant.tests.MenuItemModelTest
-python manage.py test restaurant.tests.ViewTests
-python manage.py test restaurant.tests.CustomLogicTest
-```
-
-### Test Coverage
-
-The test suite includes:
-- Model tests (creation, relationships, methods)
-- Form validation tests
-- View tests (authentication, authorization, CRUD operations)
-- Custom logic tests (loops, conditionals, data processing)
-
-## Deployment
-
-### Pre-Deployment Checklist
-
-1. **Security Settings**
-   - Set `DEBUG = False` in production
-   - Set `ALLOWED_HOSTS` to your domain
-   - Use environment variables for all secrets
-   - Ensure `.env` is in `.gitignore`
-
-2. **Static Files**
-   ```bash
-   python manage.py collectstatic
-   ```
-
-3. **Database**
-   - Use PostgreSQL or another production database
-   - Run migrations on production server
-   - Create production superuser
-
-4. **Environment Variables**
-   - Set all required environment variables on hosting platform
-   - Never commit secrets to git
-
-### Deployment Platforms
-
-#### Heroku
-
-1. Install Heroku CLI
-2. Create `Procfile`:
-   ```
-   web: gunicorn flavour.wsgi --log-file -
-   ```
-3. Create `runtime.txt`:
-   ```
-   python-3.13.0
-   ```
-4. Deploy:
-   ```bash
-   heroku create
-   git push heroku main
-   heroku run python manage.py migrate
-   heroku run python manage.py createsuperuser
-   ```
-
-#### Railway
-
-1. Connect your GitHub repository
-2. Set environment variables in Railway dashboard
-3. Railway will automatically detect Django and deploy
-
-#### PythonAnywhere
-
-1. Upload your code via Git or files
-2. Set up virtual environment
-3. Configure WSGI file
-4. Set environment variables
-5. Run migrations
-
-### Post-Deployment
-
-1. **Verify Deployment**
-   - Test all functionality
-   - Verify static files are served correctly
-   - Test payment processing (use Stripe test mode)
-   - Check all links work
-
-2. **Security Verification**
-   - Confirm `DEBUG = False`
-   - Verify no secrets in code
-   - Test authentication flows
-   - Verify HTTPS is enabled
-
-3. **Database Backup**
-   - Set up regular database backups
-   - Test restore procedure
-
-## Security
-
-### Implemented Security Measures
-
-1. **Environment Variables**: All secrets stored in environment variables
-2. **CSRF Protection**: Django's CSRF middleware enabled
-3. **Authentication**: django-allauth for secure authentication
-4. **Authorization**: Staff-only access to admin functions
-5. **SQL Injection Protection**: Django ORM prevents SQL injection
-6. **XSS Protection**: Django templates escape by default
-7. **Password Validation**: Django's password validators enforced
-8. **Secure Payment Processing**: Stripe handles payment data securely
-
-### Security Checklist for Production
-
-- [ ] `DEBUG = False`
-- [ ] `ALLOWED_HOSTS` configured
-- [ ] `SECRET_KEY` in environment variable
-- [ ] Stripe keys in environment variables
-- [ ] HTTPS enabled
-- [ ] Database credentials secured
-- [ ] `.env` file in `.gitignore`
-- [ ] No secrets in code or git history
+All 31+ tests should pass! 🎉
 
 ## Project Structure
 
 ```
 django-restaurant/
-├── flavour/                 # Main project directory
-│   ├── settings.py         # Django settings
-│   ├── urls.py             # Root URL configuration
-│   ├── views.py            # Root views
-│   ├── wsgi.py             # WSGI configuration
-│   └── asgi.py             # ASGI configuration
-├── restaurant/             # Main app
-│   ├── models.py           # Database models (MenuItem, Order, Reservation)
-│   ├── views.py            # View functions
-│   ├── forms.py            # Form classes with validation
-│   ├── urls.py             # App URL configuration
-│   ├── admin.py            # Admin configuration
-│   ├── tests.py            # Test suite
-│   └── templates/          # App templates
-│       └── restaurant/
-├── templates/              # Project-level templates
-│   ├── base.html          # Base template with navigation
-│   └── home.html          # Home page
-├── static/                # Static files (CSS, JS, images)
-├── media/                 # User-uploaded files
-├── manage.py             # Django management script
-├── requirements.txt       # Python dependencies
-├── .gitignore            # Git ignore rules
-├── README.md             # This file
-└── db.sqlite3            # SQLite database (development)
+├── flavour/              # Main Django project
+│   ├── settings.py      # Configuration
+│   ├── urls.py          # Root URL routing
+│   └── views.py         # Home page view
+├── restaurant/          # Main app (where the magic happens)
+│   ├── models.py        # Database models
+│   ├── views.py         # All the view functions
+│   ├── forms.py         # Form classes with validation
+│   ├── urls.py          # App URL routing
+│   ├── admin.py         # Admin configuration
+│   ├── tests.py         # Test suite
+│   └── templates/       # HTML templates
+├── templates/           # Project-level templates
+│   ├── base.html        # Base template with navigation
+│   └── home.html        # Home page
+├── media/               # User-uploaded files (menu images)
+├── manage.py           # Django management script
+└── requirements.txt    # Python dependencies
 ```
 
-## Assessment Criteria Coverage
+## Key Features Explained
 
-### 1. Full Stack Web Application Design & Development
+### Custom Python Logic
 
-✅ **1.1**: Multiple apps (restaurant, menu) with reusable components  
-✅ **1.2**: Front-end with Bootstrap, accessibility features, responsive design  
-✅ **1.3**: Full-stack implementation with database, interactive front-end, multiple apps  
-✅ **1.4**: Forms with validation (MenuItemForm, ReservationForm)  
-✅ **1.5**: Django file structure following conventions  
-✅ **1.6**: Clean code with docstrings, consistent naming, organized structure  
-✅ **1.7**: Consistent URL patterns using Django URL routing  
-✅ **1.8**: Main navigation menu in base template, structured layout  
-✅ **1.9**: Custom Python logic (order calculations, filtering, status management)  
-✅ **1.10**: Functions with compound statements (if/else, loops) in views and models  
-✅ **1.11**: Comprehensive test suite covering functionality, usability, data management  
+I implemented several custom functions that demonstrate Python proficiency:
 
-### 2. Relational Data Model & Business Logic
+**Order Total Calculation:**
+```python
+def calculate_total(self):
+    total = Decimal('0.00')
+    for item in self.order_items.all():
+        total += item.subtotal
+    return total
+```
 
-✅ **2.1**: Database schema with relationships (User → Order, Order → OrderItem → MenuItem, User → Reservation)  
-✅ **2.2**: Three custom models (Order, Reservation, OrderItem) in addition to MenuItem  
-✅ **2.3**: Forms with validation for creating records (MenuItemForm, ReservationForm)  
-✅ **2.4**: Full CRUD operations for all models (Create, Read, Update, Delete)  
+**Menu Filtering by Category:**
+```python
+categories = {}
+for item in menu_items:
+    if item.category not in categories:
+        categories[item.category] = []
+    categories[item.category].append(item)
+```
 
-### 3. Authentication & Authorization
+**Reservation Validation:**
+```python
+if date < today:
+    raise ValidationError("Date cannot be in the past.")
+if time < opening_time or time > closing_time:
+    raise ValidationError("Outside business hours.")
+```
 
-✅ **3.1**: Authentication mechanism (django-allauth) - users register/login to place orders and make reservations  
-✅ **3.2**: Login/register pages restricted to anonymous users via allauth settings  
-✅ **3.3**: Authorization prevents non-admin users from accessing admin functions (staff-only decorators)  
+### Database Relationships
 
-### 4. E-commerce Payment System
+The models are connected with proper relationships:
+- `User` → `Order` (one user can have many orders)
+- `Order` → `OrderItem` (one order can have many items)
+- `OrderItem` → `MenuItem` (each item references a menu item)
+- `User` → `Reservation` (one user can have many reservations)
 
-✅ **4.1**: Stripe integration for payment processing (shopping cart checkout)  
-✅ **4.2**: Feedback system for successful/unsuccessful purchases with helpful messages  
+This ensures data integrity and makes querying efficient.
 
-### 5. Version Control & Deployment
+## Deployment
 
-✅ **5.1**: Deployment instructions provided (Heroku, Railway, PythonAnywhere)  
-✅ **5.2**: Code review process ensures no commented code or broken links  
-✅ **5.3**: Security measures: environment variables, DEBUG=False for production, .gitignore  
-✅ **5.4**: Git-based version control with regular commits  
-✅ **5.5**: Well-structured README with consistent markdown format  
-✅ **5.6**: Complete deployment procedure documented, including database and testing  
+For production deployment, I've set up:
 
-## Custom Python Logic Examples
+- Environment-based configuration (dev vs production)
+- Security settings (HTTPS, secure cookies, etc.)
+- Static file handling
+- Database configuration options
 
-The application demonstrates proficiency in Python with compound statements:
+The project is ready to deploy on platforms like:
+- Heroku
+- Railway
+- PythonAnywhere
+- Any platform that supports Django
 
-1. **Order Total Calculation** (`models.py`):
-   ```python
-   def calculate_total(self):
-       total = Decimal('0.00')
-       for item in self.order_items.all():
-           total += item.subtotal
-       return total
-   ```
+Just make sure to:
+1. Set `DEBUG = False`
+2. Configure `ALLOWED_HOSTS`
+3. Use a production database (PostgreSQL recommended)
+4. Set up environment variables on your hosting platform
+5. Run `python manage.py collectstatic`
 
-2. **Menu Filtering by Category** (`views.py`):
-   ```python
-   categories = {}
-   for item in menu_items:
-       if item.category not in categories:
-           categories[item.category] = []
-       categories[item.category].append(item)
-   ```
+## What I Learned
 
-3. **Reservation Validation** (`forms.py`):
-   ```python
-   if date < today:
-       raise ValidationError("Date cannot be in the past.")
-   if time < opening_time or time > closing_time:
-       raise ValidationError("Outside business hours.")
-   ```
+Building this project taught me:
+- How to structure a full-stack Django application
+- Implementing authentication and authorization properly
+- Integrating third-party APIs (Stripe)
+- Writing comprehensive tests
+- Building user-friendly forms with validation
+- Managing file uploads (menu images)
+- Creating PDFs programmatically (invoices)
+- Following Django best practices
+
+## Future Improvements
+
+If I were to continue working on this, I'd add:
+- Email notifications for orders and reservations
+- Real-time order status updates
+- Customer reviews and ratings
+- Delivery tracking
+- Admin dashboard with analytics
+- Mobile app API endpoints
+
+## Contributing
+
+This is a personal project, but if you find bugs or have suggestions, feel free to open an issue or submit a pull request!
 
 ## License
 
-This project is created for educational purposes.
+This project was created for educational purposes.
 
 ## Contact
 
-For questions or support, please contact the development team.
+Questions? Feel free to reach out or open an issue on GitHub.
 
 ---
 
-**Note**: This application is designed for educational assessment purposes. For production use, additional security measures, error handling, and performance optimizations should be implemented.
-
-
-
-
-
-
-
-
-
-
-
-
-
+**Note**: This application is designed for educational purposes. For production use, you'd want to add additional security measures, error handling, and performance optimizations. But it's a solid foundation that demonstrates full-stack development skills!
