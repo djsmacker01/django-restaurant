@@ -31,7 +31,10 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/media
+# Allow media/menu_images/ to be committed (sample images)
+# But ignore other media files (user uploads)
+/media/*
+!/media/menu_images/
 /staticfiles
 /static
 

@@ -26,6 +26,19 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     path('restaurant/', include('restaurant.urls')),
 ]
-# Serve media files in development
+
+# Serve media files
+# In development: use static() helper
+# In production: serve through Django (Railway's file system is ephemeral, but this works for now)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # In production, serve media files through Django
+    # Note: Railway's file system is ephemeral - files will be lost on redeploy
+    # For production, consider using cloud storage (AWS S3, Cloudinary, etc.)
+    from django.views.static import serve
+    from django.urls import re_path
+    
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
