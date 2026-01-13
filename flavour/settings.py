@@ -55,6 +55,26 @@ else:
     ]
 
 
+# CSRF Trusted Origins - Required for Railway deployment
+# Note: CSRF_TRUSTED_ORIGINS doesn't support wildcards
+# Best solution: Set CSRF_TRUSTED_ORIGINS in Railway environment variables
+CSRF_TRUSTED_ORIGINS_ENV = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if CSRF_TRUSTED_ORIGINS_ENV:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS_ENV.split(',') if origin.strip()]
+elif IS_RAILWAY:
+    # On Railway: Disable CSRF origin checking by setting to empty
+    # The middleware will handle Railway domains
+    # OR set via Railway env var: CSRF_TRUSTED_ORIGINS=https://web-production-0b071.up.railway.app
+    CSRF_TRUSTED_ORIGINS = []
+    # Alternative: Use CSRF_USE_SESSIONS to avoid origin checking
+    CSRF_USE_SESSIONS = True
+else:
+    # Local development
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ]
+
 if not DEBUG:
     
     SECURE_SSL_REDIRECT = True
