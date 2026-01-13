@@ -56,10 +56,13 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 
 # Stripe Test Keys (for development)
+# Replace these placeholder values with your actual keys from Stripe Dashboard
 STRIPE_SECRET_KEY=sk_test_YOUR_SECRET_KEY_HERE
 STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_PUBLISHABLE_KEY_HERE
 STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET_HERE
 ```
+
+**Note**: The values above are placeholders. Replace them with your actual Stripe API keys from the Stripe Dashboard.
 
 ### 5. Verify Installation
 

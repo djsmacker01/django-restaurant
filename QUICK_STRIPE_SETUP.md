@@ -29,11 +29,13 @@ STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 Create a new file named `.env` in the project root with:
 
 ```env
-SECRET_KEY=django-insecure-^nq^4e4w$+_kbzerrokz!$7sb#4-rxhs_tzx(5obl1%%zt*fwb
+SECRET_KEY=your-django-secret-key-here
 DEBUG=True
 STRIPE_SECRET_KEY=sk_test_your_secret_key_here
 STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
 ```
+
+**Note**: Replace all placeholder values with your actual keys. Never commit this file to git!
 
 ### Step 3: Restart Server (30 seconds)
 
