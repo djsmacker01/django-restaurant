@@ -27,19 +27,22 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-^nq^4e4w$+_kbzerrokz!$7sb#
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 # ALLOWED_HOSTS configuration
+# Railway uses dynamic subdomains, so we need to allow all Railway domains
 ALLOWED_HOSTS_ENV = os.getenv('ALLOWED_HOSTS', '')
 if ALLOWED_HOSTS_ENV:
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
 else:
-    # Default: allow Railway domains and localhost
-    # Railway domains use pattern: *.up.railway.app
-    ALLOWED_HOSTS = [
-        '.up.railway.app',  # Matches all Railway subdomains
-        '.railway.app',      # Matches railway.app domain
-        'localhost',
-        '127.0.0.1',
-        '0.0.0.0'
-    ]
+    # Check if we're on Railway (Railway sets PORT environment variable)
+    if os.getenv('PORT') or os.getenv('RAILWAY_ENVIRONMENT'):
+        # On Railway: allow all hosts (Railway handles security)
+        ALLOWED_HOSTS = ['*']
+    else:
+        # Local development: allow localhost
+        ALLOWED_HOSTS = [
+            'localhost',
+            '127.0.0.1',
+            '0.0.0.0',
+        ]
 
 
 if not DEBUG:
