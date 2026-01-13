@@ -16,17 +16,24 @@ class MenuItemAdmin(admin.ModelAdmin):
     Admin configuration for MenuItem model
     Optimized for production content management
     """
+
+    # field to display list view
     list_display = [
         'name',
         'category',
         'price', 
         'is_available', 
-        'has_image',
-        'created_at',
-        'updated_at'
-    ]
+        'created_at'
+
+          ]
+
+    # Fields you can click to view details   
     list_display_links = ['name']
-    list_filter = ['category', 'is_available', 'created_at', 'updated_at']
+
+    # Filters on the right sidebar
+    list_filter = ['category', 'is_available', 'created_at']
+
+    # Search functionality
     search_fields = ['name', 'description']
     readonly_fields = ['created_at', 'updated_at', 'image_preview']
     fieldsets = (
@@ -84,57 +91,5 @@ class OrderAdmin(admin.ModelAdmin):
     ordering = ['-created_at']
     list_per_page = 20
 
-
-@admin.register(Reservation)
-class ReservationAdmin(admin.ModelAdmin):
-    """Admin configuration for Reservation model."""
-    list_display = [
-        'name',
-        'user',
-        'email',
-        'phone',
-        'date',
-        'time',
-        'number_of_guests',
-        'status_display',
-        'created_at'
-    ]
-    list_display_links = ['name']
-    list_filter = ['status', 'date', 'created_at', 'number_of_guests']
-    search_fields = ['name', 'email', 'phone', 'user__username', 'user__email']
-    readonly_fields = ['created_at', 'updated_at']
-    date_hierarchy = 'date'  # Easy navigation by date
-    ordering = ['-date', '-time']  # Show upcoming reservations first
-    list_per_page = 25
-    
-    fieldsets = (
-        ('Reservation Information', {
-            'fields': ('user', 'name', 'email', 'phone')
-        }),
-        ('Date & Time', {
-            'fields': ('date', 'time', 'number_of_guests')
-        }),
-        ('Details', {
-            'fields': ('status', 'special_requests')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def status_display(self, obj):
-        """Display status with color coding."""
-        colors = {
-            'pending': '#ffc107',  # Yellow
-            'confirmed': '#28a745',  # Green
-            'cancelled': '#dc3545',  # Red
-            'completed': '#17a2b8',  # Blue
-        }
-        color = colors.get(obj.status, '#6c757d')
-        return format_html(
-            '<span style="background-color: {}; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">{}</span>',
-            color,
-            obj.get_status_display()
-        )
-    status_display.short_description = 'Status'
+# Register your models with admin class  here.
+admin.site.register(MenuItem, MenuItemAdmin)
