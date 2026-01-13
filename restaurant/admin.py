@@ -91,5 +91,22 @@ class OrderAdmin(admin.ModelAdmin):
     ordering = ['-created_at']
     list_per_page = 20
 
-# Register your models with admin class  here.
-admin.site.register(MenuItem, MenuItemAdmin)
+
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    """Admin configuration for Reservation model."""
+    list_display = [
+        'name',
+        'user',
+        'date',
+        'time',
+        'number_of_guests',
+        'status',
+        'created_at'
+    ]
+    list_filter = ['status', 'date', 'created_at']
+    search_fields = ['name', 'user__username', 'email', 'phone']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['date', 'time']
+    list_per_page = 20
+
