@@ -5,8 +5,10 @@ Import this in settings.py or use environment variables to switch between dev/pr
 from .settings import *
 import os
 
+
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
@@ -15,6 +17,7 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+
 
 DATABASES = {
     'default': {
@@ -30,6 +33,9 @@ DATABASES = {
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+
+
 
 LOGGING = {
     'version': 1,

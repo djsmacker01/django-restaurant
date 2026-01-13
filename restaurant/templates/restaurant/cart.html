@@ -93,6 +93,7 @@
                 </div>
             </div>
 
+            <!-- Order Summary -->
             <div class="col-lg-4">
                 <div class="card shadow-lg sticky-top" style="top: 100px;">
                     <div class="card-header">
@@ -141,6 +142,7 @@
     </div>
 </section>
 
+<!-- Delete Item Confirmation Modals -->
 {% for item in order_items %}
 <div class="modal fade" id="deleteItemModal{{ item.pk }}" tabindex="-1" 
      aria-labelledby="deleteItemModalLabel{{ item.pk }}" aria-hidden="true">

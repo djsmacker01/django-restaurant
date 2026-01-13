@@ -6,6 +6,7 @@ import os
 import sys
 import django
 
+# Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flavour.settings')
 django.setup()
 
@@ -21,18 +22,23 @@ def check_database():
     print("DATABASE CHECK")
     print("=" * 60)
     
+    # Check MenuItems
     menu_count = MenuItem.objects.count()
     print(f"[OK] Menu Items: {menu_count}")
     
+    # Check Users
     user_count = User.objects.count()
     print(f"[OK] Users: {user_count}")
     
+    # Check Orders
     order_count = Order.objects.count()
     print(f"[OK] Orders: {order_count}")
     
+    # Check Reservations
     reservation_count = Reservation.objects.count()
     print(f"[OK] Reservations: {reservation_count}")
     
+    # Check relationships
     if menu_count > 0:
         item = MenuItem.objects.first()
         print(f"[OK] MenuItem model working: {item.name}")
@@ -67,16 +73,19 @@ def check_models():
     print("MODEL METHODS CHECK")
     print("=" * 60)
     
+    # Create test data
     user, _ = User.objects.get_or_create(
         username='test_check',
         defaults={'email': 'test@check.com'}
     )
     
+    # Test MenuItem
     if MenuItem.objects.exists():
         item = MenuItem.objects.first()
         print(f"[OK] MenuItem.__str__(): {str(item)}")
         print(f"[OK] MenuItem.get_category_display(): {item.get_category_display()}")
     
+    # Test Order
     order = Order.objects.create(
         user=user,
         order_number='TEST-001',
@@ -85,6 +94,7 @@ def check_models():
     )
     print(f"[OK] Order created: {order.order_number}")
     
+    # Test Reservation
     from datetime import date, time
     from django.utils import timezone
     reservation = Reservation.objects.create(
@@ -98,6 +108,7 @@ def check_models():
     )
     print(f"[OK] Reservation created: {reservation.name}")
     
+    # Cleanup
     order.delete()
     reservation.delete()
     if user.username == 'test_check':
@@ -115,6 +126,7 @@ def check_forms():
     from django.utils import timezone
     from datetime import timedelta
     
+    # Test MenuItemForm
     form = MenuItemForm(data={
         'name': 'Test Item',
         'price': '-10.00',  # Invalid
@@ -129,6 +141,7 @@ def check_forms():
     })
     print(f"[OK] MenuItemForm valid data: {form.is_valid()}")
     
+    # Test ReservationForm
     future_date = timezone.now().date() + timedelta(days=1)
     form = ReservationForm(data={
         'name': 'Test',

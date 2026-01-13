@@ -22,6 +22,7 @@ class Command(BaseCommand):
         self.stdout.write('CREATING SAMPLE DATA')
         self.stdout.write('=' * 60)
         
+      
         self.create_menu_items()
         
         if options['full']:
@@ -42,6 +43,7 @@ class Command(BaseCommand):
         self.stdout.write('\n[1/4] Creating Menu Items...')
         
         menu_items = [
+           
             {
                 'name': 'Caesar Salad',
                 'description': 'Fresh romaine lettuce with parmesan cheese, croutons, and our signature Caesar dressing. A classic favorite.',
@@ -78,6 +80,7 @@ class Command(BaseCommand):
                 'is_available': True,
             },
             
+          
             {
                 'name': 'Grilled Salmon',
                 'description': 'Fresh Atlantic salmon grilled to perfection, served with roasted vegetables and lemon butter sauce. A healthy and delicious choice.',
@@ -128,6 +131,7 @@ class Command(BaseCommand):
                 'is_available': True,
             },
             
+            # Desserts
             {
                 'name': 'Chocolate Lava Cake',
                 'description': 'Warm chocolate cake with a molten center, served with vanilla ice cream. A decadent treat.',
@@ -164,6 +168,7 @@ class Command(BaseCommand):
                 'is_available': True,
             },
             
+            # Drinks
             {
                 'name': 'Red Wine',
                 'description': 'House selection of premium red wine. Ask your server for today\'s selection.',
@@ -288,6 +293,7 @@ class Command(BaseCommand):
         """Create sample orders for testing."""
         self.stdout.write('\n[3/4] Creating Sample Orders...')
         
+        
         customers = User.objects.filter(is_staff=False)[:2]
         menu_items = list(MenuItem.objects.filter(is_available=True))
         
@@ -320,6 +326,7 @@ class Command(BaseCommand):
             if i < len(order_scenarios):
                 scenario = order_scenarios[i]
                 
+                
                 order = Order.objects.create(
                     user=customer,
                     order_number=f'ORD-{1000 + i}',
@@ -328,6 +335,7 @@ class Command(BaseCommand):
                     total_amount=Decimal('0.00'),
                 )
                 
+               
                 selected_items = random.sample(menu_items, min(scenario['items_count'], len(menu_items)))
                 for item in selected_items:
                     quantity = random.randint(1, 3)
@@ -337,6 +345,7 @@ class Command(BaseCommand):
                         quantity=quantity,
                         price=item.price,
                     )
+                
                 
                 order.calculate_total()
                 created_count += 1
@@ -366,7 +375,7 @@ class Command(BaseCommand):
         
         reservation_scenarios = [
             {
-                'name': 'John Smith',
+                'name': 'Nurudeen Smith',
                 'phone': '07123456789',
                 'date_offset': 3,
                 'time': time(19, 0),

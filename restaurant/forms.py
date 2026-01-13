@@ -102,6 +102,7 @@ class ReservationForm(forms.ModelForm):
             today = timezone.now().date()
             if date < today:
                 raise ValidationError("Reservation date cannot be in the past.")
+            # Check if date is too far in the future (e.g., 3 months)
             max_date = today + timedelta(days=90)
             if date > max_date:
                 raise ValidationError("Reservations can only be made up to 3 months in advance.")
@@ -111,6 +112,7 @@ class ReservationForm(forms.ModelForm):
         """Validate that reservation time is during business hours."""
         time = self.cleaned_data.get('time')
         if time:
+            # Business hours: 11:00 AM to 10:00 PM
             opening_time = datetime.strptime('11:00', '%H:%M').time()
             closing_time = datetime.strptime('22:00', '%H:%M').time()
             if time < opening_time or time > closing_time:
@@ -128,6 +130,7 @@ class ReservationForm(forms.ModelForm):
         """Basic phone number validation."""
         phone = self.cleaned_data.get('phone')
         if phone:
+            # Remove common separators
             phone_clean = phone.replace('-', '').replace(' ', '').replace('(', '').replace(')', '')
             if not phone_clean.isdigit() or len(phone_clean) < 10:
                 raise ValidationError("Please enter a valid phone number.")

@@ -18,6 +18,7 @@ class Command(BaseCommand):
         self.stdout.write('CREATING TEST SCENARIOS')
         self.stdout.write('=' * 60)
         
+       
         if MenuItem.objects.count() < 5:
             self.stdout.write(
                 self.style.WARNING(
@@ -49,6 +50,7 @@ class Command(BaseCommand):
         user.set_password('testpass123')
         user.save()
         
+      
         order = Order.objects.create(
             user=user,
             order_number='SCENARIO-001',
@@ -57,6 +59,7 @@ class Command(BaseCommand):
             total_amount=Decimal('0.00'),
         )
         
+       
         items = MenuItem.objects.filter(is_available=True)[:5]
         for item in items:
             OrderItem.objects.create(
@@ -125,14 +128,16 @@ class Command(BaseCommand):
             }
         )
         user.set_password('testpass123')
-        user.save(        )
+        user.save()
         
+     
         cart, created = Order.objects.get_or_create(
             user=user,
             status='pending',
             payment_status='pending',
             defaults={'order_number': 'CART-TEST-001'}
         )
+        
         
         items = MenuItem.objects.filter(is_available=True)[:4]
         for item in items:
@@ -185,6 +190,7 @@ class Command(BaseCommand):
                 total_amount=Decimal('0.00'),
             )
             
+         
             for item in items:
                 OrderItem.objects.create(
                     order=order,
