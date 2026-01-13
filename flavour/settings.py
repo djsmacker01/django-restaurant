@@ -29,20 +29,30 @@ DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 # ALLOWED_HOSTS configuration
 # Railway uses dynamic subdomains, so we need to allow all Railway domains
 ALLOWED_HOSTS_ENV = os.getenv('ALLOWED_HOSTS', '')
+
+# Check if we're on Railway (Railway sets PORT environment variable)
+# Also check for Railway-specific environment variables
+IS_RAILWAY = bool(
+    os.getenv('PORT') or 
+    os.getenv('RAILWAY_ENVIRONMENT') or 
+    os.getenv('RAILWAY') or
+    os.getenv('RAILWAY_ENVIRONMENT_NAME')
+)
+
 if ALLOWED_HOSTS_ENV:
+    # If ALLOWED_HOSTS is explicitly set, use it
     ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',') if host.strip()]
+elif IS_RAILWAY:
+    # On Railway: allow all hosts (Railway handles security)
+    # This is safe because Railway routes traffic and handles SSL
+    ALLOWED_HOSTS = ['*']
 else:
-    # Check if we're on Railway (Railway sets PORT environment variable)
-    if os.getenv('PORT') or os.getenv('RAILWAY_ENVIRONMENT'):
-        # On Railway: allow all hosts (Railway handles security)
-        ALLOWED_HOSTS = ['*']
-    else:
-        # Local development: allow localhost
-        ALLOWED_HOSTS = [
-            'localhost',
-            '127.0.0.1',
-            '0.0.0.0',
-        ]
+    # Local development: allow localhost
+    ALLOWED_HOSTS = [
+        'localhost',
+        '127.0.0.1',
+        '0.0.0.0',
+    ]
 
 
 if not DEBUG:
